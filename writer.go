@@ -55,6 +55,14 @@ func (w *writer) WriteMessages(ctx context.Context, messages []*Message) error {
 		}
 	}
 
+	resp, err := stream.CloseAndRecv()
+	if err != nil {
+		return err
+	}
+	if int(resp.MessagesSent) != len(messages) {
+		return errors.New("amount of sent messages not equals to amount of input messages")
+	}
+
 	return allErrors
 }
 

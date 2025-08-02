@@ -2,6 +2,7 @@ package pubbet
 
 import (
 	"context"
+	"errors"
 	"github.com/misshanya/pubbet-sdk-go/internal"
 	pb "github.com/misshanya/pubbet/gen/go/pubbet/v1"
 	"google.golang.org/grpc"
@@ -9,7 +10,7 @@ import (
 )
 
 type Writer interface {
-	WriteMessage(topicName string, message []byte) error
+	WriteMessages(ctx context.Context, messages []*Message) error
 }
 
 type writerClient interface {
@@ -19,7 +20,6 @@ type writerClient interface {
 type writer struct {
 	client writerClient
 	conn   conn
-	stream grpc.ClientStreamingClient[pb.PublishMessagesRequest, pb.PublishMessagesResponse]
 }
 
 // NewWriter creates a new instance of Pubbet writer
@@ -36,25 +36,26 @@ func NewWriter(pubbetAddr string, creds credentials.TransportCredentials) (Write
 	return writer, nil
 }
 
-// WriteMessage returns the channel to write messages in the following topic
-func (w *writer) WriteMessage(topicName string, message []byte) error {
-	if w.stream == nil {
-		stream, err := w.client.PublishMessages(context.Background())
-		if err != nil {
-			return err
-		}
-		w.stream = stream
-	}
-
-	err := w.stream.Send(&pb.PublishMessagesRequest{
-		TopicName: topicName,
-		Message:   message,
-	})
+// WriteMessages sends messages to Pubbet server
+func (w *writer) WriteMessages(ctx context.Context, messages []*Message) error {
+	stream, err := w.client.PublishMessages(ctx)
 	if err != nil {
 		return err
 	}
 
-	return nil
+	var allErrors error
+
+	for _, msg := range messages {
+		err := stream.Send(&pb.PublishMessagesRequest{
+			TopicName: msg.TopicName,
+			Message:   msg.Data,
+		})
+		if err != nil {
+			allErrors = errors.Join(allErrors, err)
+		}
+	}
+
+	return allErrors
 }
 
 // Shutdown gracefully closes connection with Pubbet server

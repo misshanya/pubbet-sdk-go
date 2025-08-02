@@ -50,14 +50,17 @@ func (r *reader) ListenMessages(ctx context.Context, topicName string) (<-chan [
 	}
 
 	go func() {
-		resp, err := stream.Recv()
-		if err == io.EOF {
-			close(ch)
-			return
+		for {
+			resp, err := stream.Recv()
+			if err == io.EOF {
+				close(ch)
+				return
+			}
+
+			msg := resp.GetMessage()
+			ch <- msg
 		}
 
-		msg := resp.GetMessage()
-		ch <- msg
 	}()
 
 	return ch, nil

@@ -11,6 +11,7 @@ import (
 
 type Reader interface {
 	ListenMessages(ctx context.Context, topicName string) (<-chan []byte, error)
+	Shutdown() error
 }
 
 type readerClient interface {

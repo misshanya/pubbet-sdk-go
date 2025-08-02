@@ -11,6 +11,7 @@ import (
 
 type Writer interface {
 	WriteMessages(ctx context.Context, messages []*Message) error
+	Shutdown() error
 }
 
 type writerClient interface {

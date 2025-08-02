@@ -9,7 +9,7 @@ import (
 )
 
 type Writer interface {
-	WriteMessage(ctx context.Context, topicName string, message []byte) error
+	WriteMessage(topicName string, message []byte) error
 }
 
 type writerClient interface {
@@ -37,9 +37,9 @@ func NewWriter(pubbetAddr string, creds credentials.TransportCredentials) (Write
 }
 
 // WriteMessage returns the channel to write messages in the following topic
-func (w *writer) WriteMessage(ctx context.Context, topicName string, message []byte) error {
+func (w *writer) WriteMessage(topicName string, message []byte) error {
 	if w.stream == nil {
-		stream, err := w.client.PublishMessages(ctx)
+		stream, err := w.client.PublishMessages(context.Background())
 		if err != nil {
 			return err
 		}
